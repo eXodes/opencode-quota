@@ -7,6 +7,7 @@ export type CanonicalQuotaProviderId =
   | "alibaba-coding-plan"
   | "synthetic"
   | "chutes"
+  | "crof"
   | "google-antigravity"
   | "google-gemini-cli"
   | "zai"
@@ -53,6 +54,7 @@ export const QUOTA_PROVIDER_LABELS: Readonly<Record<string, string>> = {
   "google-gemini-cli": "Gemini CLI",
   synthetic: "Synthetic",
   chutes: "Chutes",
+  crof: "Crof",
   cursor: "Cursor",
   "qwen-code": "Qwen",
   "alibaba-coding-plan": "Alibaba Coding Plan",
@@ -76,6 +78,8 @@ export const QUOTA_PROVIDER_ID_SYNONYMS: Readonly<Record<string, string>> = {
   qwen: "qwen-code",
   alibaba: "alibaba-coding-plan",
   "nano-gpt": "nanogpt",
+  "crof-ai": "crof",
+  nahcrof: "crof",
   minimax: "minimax-coding-plan",
   kimi: "kimi-for-coding",
   "kimi-for-code": "kimi-for-coding",
@@ -96,6 +100,7 @@ export const QUOTA_PROVIDER_RUNTIME_IDS: QuotaProviderRuntimeIds = {
   "alibaba-coding-plan": ["alibaba-coding-plan"],
   synthetic: ["synthetic"],
   chutes: ["chutes", "chutes-ai"],
+  crof: ["crof", "crof-ai", "nahcrof"],
   "google-antigravity": ["google-antigravity", "google", "antigravity"],
   "google-gemini-cli": [
     "google-gemini-cli",
@@ -169,6 +174,13 @@ export const QUOTA_PROVIDER_SHAPES: readonly QuotaProviderShape[] = [
   },
   {
     id: "chutes",
+    autoSetup: "usually",
+    authentication: "opencode_auth_api_key",
+    authFallbacks: ["env_api_key", "global_opencode_config"],
+    quota: "remote_api",
+  },
+  {
+    id: "crof",
     autoSetup: "usually",
     authentication: "opencode_auth_api_key",
     authFallbacks: ["env_api_key", "global_opencode_config"],

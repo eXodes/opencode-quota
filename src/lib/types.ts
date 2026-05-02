@@ -308,6 +308,18 @@ export interface AuthData {
     type: string;
     key?: string;
   };
+  crof?: {
+    type: string;
+    key?: string;
+  };
+  "crof-ai"?: {
+    type: string;
+    key?: string;
+  };
+  nahcrof?: {
+    type: string;
+    key?: string;
+  };
   nanogpt?: NanoGptAuthData;
   "nano-gpt"?: NanoGptAuthData;
   cursor?: CursorOAuthAuthData;
@@ -568,6 +580,16 @@ export type ChutesResult =
       success: true;
       percentRemaining: number;
       resetTimeIso?: string;
+    }
+  | QuotaError
+  | null;
+export type CrofResult =
+  | {
+      success: true;
+      credits: number;
+      requestsPlan: number;
+      usableRequests: number;
+      percentRemaining: number;
     }
   | QuotaError
   | null;

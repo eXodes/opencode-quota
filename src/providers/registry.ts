@@ -13,6 +13,7 @@ import { googleAntigravityProvider } from "./google-antigravity.js";
 import { googleGeminiCliProvider } from "./google-gemini-cli.js";
 import { syntheticProvider } from "./synthetic.js";
 import { chutesProvider } from "./chutes.js";
+import { crofProvider } from "./crof.js";
 import { qwenCodeProvider } from "./qwen-code.js";
 import { alibabaCodingPlanProvider } from "./alibaba-coding-plan.js";
 import { zaiProvider } from "./zai.js";
@@ -32,6 +33,7 @@ export function getProviders(): QuotaProvider[] {
     alibabaCodingPlanProvider,
     syntheticProvider,
     chutesProvider,
+    crofProvider,
     googleAntigravityProvider,
     googleGeminiCliProvider,
     zaiProvider,
