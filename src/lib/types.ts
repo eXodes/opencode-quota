@@ -349,6 +349,10 @@ export interface AuthData {
     type: "api";
     key: string;
   };
+  "zhipu-coding-plan"?: {
+    type: "api";
+    key: string;
+  };
   "minimax-coding-plan"?: MiniMaxAuthData;
   "kimi-code"?: KimiAuthData;
   kimi?: KimiAuthData;

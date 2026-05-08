@@ -34,6 +34,7 @@ import {
   resolveMiniMaxAuthCached,
 } from "./minimax-auth.js";
 import { DEFAULT_ZAI_AUTH_CACHE_MAX_AGE_MS, getZaiAuthDiagnostics } from "./zai-auth.js";
+import { DEFAULT_ZHIPU_AUTH_CACHE_MAX_AGE_MS, getZhipuAuthDiagnostics } from "./zhipu-auth.js";
 import {
   DEFAULT_KIMI_AUTH_CACHE_MAX_AGE_MS,
   getKimiAuthDiagnostics,
@@ -92,6 +93,7 @@ import type {
 } from "./types.js";
 import { queryMiniMaxQuota } from "../providers/minimax-coding-plan.js";
 import { queryZaiQuota } from "./zai.js";
+import { queryZhipuQuota } from "./zhipu.js";
 import {
   getOpenCodeGoConfigDiagnostics,
   resolveOpenCodeGoConfigCached,
@@ -1186,6 +1188,55 @@ export async function buildQuotaStatusReport(params: {
   }
   appendProviderCompactLiveProbeRows(zaiRows, "zai", params.providerLiveProbes);
   sections.push(createKvSection("zai", "zai:", zaiRows));
+
+  // === zhipu ===
+  const zhipuRows: ReportKvRow[] = [];
+  const zhipuAuth = await getZhipuAuthDiagnostics({
+    maxAgeMs: DEFAULT_ZHIPU_AUTH_CACHE_MAX_AGE_MS,
+  });
+  zhipuRows.push({ key: "auth_state", value: zhipuAuth.state });
+  zhipuRows.push({
+    key: "api_key_configured",
+    value: zhipuAuth.state === "configured" ? "true" : "false",
+  });
+  zhipuRows.push({ key: "api_key_source", value: zhipuAuth.source ?? "(none)" });
+  zhipuRows.push({ key: "api_key_checked_paths", value: joinOrNone(zhipuAuth.checkedPaths) });
+  zhipuRows.push({ key: "api_key_auth_paths", value: joinOrNone(zhipuAuth.authPaths) });
+  if (zhipuAuth.state === "invalid") {
+    zhipuRows.push({ key: "auth_error", value: sanitizeDisplayText(zhipuAuth.error) });
+  }
+  if (zhipuAuth.state === "configured") {
+    const zhipuQuota = await queryZhipuQuota();
+    if (!zhipuQuota) {
+      zhipuRows.push({ key: "live_fetch_error", value: "Zhipu API key became unavailable before fetch" });
+    } else if (!zhipuQuota.success) {
+      zhipuRows.push({ key: "live_fetch_error", value: zhipuQuota.error });
+    } else {
+      if (zhipuQuota.windows.fiveHour) {
+        zhipuRows.push({
+          key: "five_hour_remaining",
+          value: `${zhipuQuota.windows.fiveHour.percentRemaining}% reset_at=${zhipuQuota.windows.fiveHour.resetTimeIso ?? "(none)"}`,
+        });
+      }
+      if (zhipuQuota.windows.weekly) {
+        zhipuRows.push({
+          key: "weekly_remaining",
+          value: `${zhipuQuota.windows.weekly.percentRemaining}% reset_at=${zhipuQuota.windows.weekly.resetTimeIso ?? "(none)"}`,
+        });
+      }
+      if (zhipuQuota.windows.mcp) {
+        zhipuRows.push({
+          key: "mcp_remaining",
+          value: `${zhipuQuota.windows.mcp.percentRemaining}% reset_at=${zhipuQuota.windows.mcp.resetTimeIso ?? "(none)"}`,
+        });
+      }
+      if (!zhipuQuota.windows.fiveHour && !zhipuQuota.windows.weekly && !zhipuQuota.windows.mcp) {
+        zhipuRows.push({ key: "live_state", value: "no reportable Zhipu quota windows" });
+      }
+    }
+  }
+  appendProviderCompactLiveProbeRows(zhipuRows, "zhipu", params.providerLiveProbes);
+  sections.push(createKvSection("zhipu", "zhipu:", zhipuRows));
 
   // === simple API key sections ===
   const syntheticDiag = await readBasicApiKeyDiagnostics(getSyntheticKeyDiagnostics);

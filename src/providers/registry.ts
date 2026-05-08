@@ -17,6 +17,7 @@ import { crofProvider } from "./crof.js";
 import { qwenCodeProvider } from "./qwen-code.js";
 import { alibabaCodingPlanProvider } from "./alibaba-coding-plan.js";
 import { zaiProvider } from "./zai.js";
+import { zhipuProvider } from "./zhipu.js";
 import { nanoGptProvider } from "./nanogpt.js";
 import { minimaxCodingPlanProvider } from "./minimax-coding-plan.js";
 import { opencodeGoProvider } from "./opencode-go.js";
@@ -37,6 +38,7 @@ export function getProviders(): QuotaProvider[] {
     googleAntigravityProvider,
     googleGeminiCliProvider,
     zaiProvider,
+    zhipuProvider,
     nanoGptProvider,
     minimaxCodingPlanProvider,
     kimiCodeProvider,

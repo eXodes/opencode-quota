@@ -99,6 +99,13 @@ describe("provider-metadata", () => {
         quota: "remote_api",
       },
       {
+        id: "zhipu",
+        autoSetup: "yes",
+        authentication: "opencode_auth_api_key",
+        authFallbacks: ["env_api_key", "global_opencode_config"],
+        quota: "remote_api",
+      },
+      {
         id: "nanogpt",
         autoSetup: "usually",
         authentication: "opencode_auth_api_key",
@@ -169,6 +176,11 @@ describe("provider-metadata", () => {
       "google",
     ]);
     expect(QUOTA_PROVIDER_RUNTIME_IDS.zai).toEqual(["zai", "glm", "zai-coding-plan"]);
+    expect(QUOTA_PROVIDER_RUNTIME_IDS.zhipu).toEqual([
+      "zhipu",
+      "glm-coding-plan",
+      "zhipu-coding-plan",
+    ]);
     expect(QUOTA_PROVIDER_RUNTIME_IDS.nanogpt).toEqual(["nanogpt", "nano-gpt"]);
     expect(QUOTA_PROVIDER_RUNTIME_IDS["minimax-coding-plan"]).toEqual([
       "minimax-coding-plan",
@@ -204,6 +216,16 @@ describe("provider-metadata", () => {
       "google",
     ]);
     expect(getQuotaProviderRuntimeIds("zai")).toEqual(["zai", "glm", "zai-coding-plan"]);
+    expect(getQuotaProviderRuntimeIds("zhipu-coding-plan")).toEqual([
+      "zhipu",
+      "glm-coding-plan",
+      "zhipu-coding-plan",
+    ]);
+    expect(getQuotaProviderRuntimeIds("glm-coding-plan")).toEqual([
+      "zhipu",
+      "glm-coding-plan",
+      "zhipu-coding-plan",
+    ]);
     expect(getQuotaProviderRuntimeIds("minimax")).toEqual(["minimax-coding-plan", "minimax"]);
     expect(getQuotaProviderRuntimeIds("kimi")).toEqual(["kimi-for-coding", "kimi", "kimi-code"]);
     expect(getQuotaProviderRuntimeIds("not-a-provider")).toEqual([]);
@@ -248,6 +270,8 @@ describe("provider-metadata", () => {
     expect(getQuotaProviderDisplayLabel("alibaba-coding-plan")).toBe("Alibaba Coding Plan");
     expect(getQuotaProviderDisplayLabel("synthetic")).toBe("Synthetic");
     expect(getQuotaProviderDisplayLabel("zai")).toBe("Z.ai");
+    expect(getQuotaProviderDisplayLabel("zhipu")).toBe("Zhipu");
+    expect(getQuotaProviderDisplayLabel("zhipu-coding-plan")).toBe("Zhipu");
     expect(getQuotaProviderDisplayLabel("nanogpt")).toBe("NanoGPT");
     expect(getQuotaProviderDisplayLabel("nano-gpt")).toBe("NanoGPT");
     expect(getQuotaProviderDisplayLabel("minimax")).toBe("MiniMax Coding Plan");

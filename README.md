@@ -207,6 +207,7 @@ Most providers work automatically. If a provider has a “Needs setup” link, o
 | Google Antigravity | [Needs setup](#google-antigravity) | Remote API |
 | Gemini CLI | [Needs setup](#gemini-cli) | Remote API |
 | Z.ai Coding Plan | Automatic | Remote API |
+| Zhipu Coding Plan | Automatic | Remote API |
 | NanoGPT | Usually automatic | Remote API |
 | OpenCode Go | [Needs setup](#opencode-go) | Dashboard scraping |
 
@@ -572,7 +573,7 @@ Run `/quota_status` and check the Alibaba auth, resolved tier, state-file path, 
 </details>
 
 <details>
-<summary><strong>MiniMax, Kimi, Chutes AI, Crof.ai, Synthetic, Z.ai, and NanoGPT</strong></summary>
+<summary><strong>MiniMax, Kimi, Chutes AI, Crof.ai, Synthetic, Z.ai, Zhipu, and NanoGPT</strong></summary>
 
 These providers use trusted env vars, trusted user/global OpenCode config, or native OpenCode auth. Run `/quota_status` and check the provider-specific API-key diagnostics. Crof.ai is env/config only.
 
@@ -584,6 +585,7 @@ These providers use trusted env vars, trusted user/global OpenCode config, or na
 | Crof.ai | Use `CROF_API_KEY`, `CROFAI_API_KEY`, or trusted user/global config. |
 | Synthetic | Use `SYNTHETIC_API_KEY`, trusted user/global config, or OpenCode auth. |
 | Z.ai Coding Plan | Use `ZAI_API_KEY` or `ZAI_CODING_PLAN_API_KEY`; malformed fallback auth is surfaced as an auth error. |
+| Zhipu Coding Plan | Use `ZHIPU_API_KEY` or `ZHIPU_CODING_PLAN_API_KEY`; malformed fallback auth is surfaced as an auth error. |
 | NanoGPT | Use `NANOGPT_API_KEY`, `NANO_GPT_API_KEY`, trusted user/global config, or OpenCode auth. |
 
 For security, repo-local `opencode.json` / `opencode.jsonc` is ignored for provider secrets in these integrations. Put secrets in environment variables or trusted user/global config.

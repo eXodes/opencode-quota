@@ -11,6 +11,7 @@ export type CanonicalQuotaProviderId =
   | "google-antigravity"
   | "google-gemini-cli"
   | "zai"
+  | "zhipu"
   | "nanogpt"
   | "minimax-coding-plan"
   | "kimi-for-coding"
@@ -60,6 +61,7 @@ export const QUOTA_PROVIDER_LABELS: Readonly<Record<string, string>> = {
   "qwen-code": "Qwen",
   "alibaba-coding-plan": "Alibaba Coding Plan",
   zai: "Z.ai",
+  zhipu: "Zhipu",
   nanogpt: "NanoGPT",
   "minimax-coding-plan": "MiniMax Coding Plan",
   "kimi-for-coding": "Kimi Code",
@@ -88,6 +90,8 @@ export const QUOTA_PROVIDER_ID_SYNONYMS: Readonly<Record<string, string>> = {
   "google-gemini": "google-gemini-cli",
   "opencode-gemini-auth": "google-gemini-cli",
   gemini: "google-gemini-cli",
+  "glm-coding-plan": "zhipu",
+  "zhipu-coding-plan": "zhipu",
 };
 
 export const QUOTA_PROVIDER_RUNTIME_IDS: QuotaProviderRuntimeIds = {
@@ -109,6 +113,7 @@ export const QUOTA_PROVIDER_RUNTIME_IDS: QuotaProviderRuntimeIds = {
     "google",
   ],
   zai: ["zai", "glm", "zai-coding-plan"],
+  zhipu: ["zhipu", "glm-coding-plan", "zhipu-coding-plan"],
   nanogpt: ["nanogpt", "nano-gpt"],
   "minimax-coding-plan": ["minimax-coding-plan", "minimax"],
   "kimi-for-coding": ["kimi-for-coding", "kimi", "kimi-code"],
@@ -202,6 +207,13 @@ export const QUOTA_PROVIDER_SHAPES: readonly QuotaProviderShape[] = [
   },
   {
     id: "zai",
+    autoSetup: "yes",
+    authentication: "opencode_auth_api_key",
+    authFallbacks: ["env_api_key", "global_opencode_config"],
+    quota: "remote_api",
+  },
+  {
+    id: "zhipu",
     autoSetup: "yes",
     authentication: "opencode_auth_api_key",
     authFallbacks: ["env_api_key", "global_opencode_config"],
