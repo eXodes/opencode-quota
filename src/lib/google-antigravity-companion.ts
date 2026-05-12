@@ -1,4 +1,5 @@
 import { readFile } from "fs/promises";
+import { readdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -103,7 +104,24 @@ function normalizeCredential(value: unknown): string {
 }
 
 function getCompanionResolvePaths(): string[] {
-  return getOpencodeRuntimeDirCandidates().cacheDirs;
+  const cacheDirs = getOpencodeRuntimeDirCandidates().cacheDirs;
+  const resolvePaths: string[] = [...cacheDirs];
+
+  for (const cacheDir of cacheDirs) {
+    try {
+      const packagesDir = join(cacheDir, "packages");
+      const entries = readdirSync(packagesDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory() && entry.name.startsWith(COMPANION_PACKAGE_NAME)) {
+          resolvePaths.push(join(packagesDir, entry.name));
+        }
+      }
+    } catch {
+      // Ignore if packages dir doesn't exist
+    }
+  }
+
+  return resolvePaths;
 }
 
 function markPackageFoundForExportBlock(
