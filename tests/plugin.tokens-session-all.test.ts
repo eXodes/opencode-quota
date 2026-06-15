@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { COMMAND_HANDLED_SENTINEL } from "../src/lib/command-handled.js";
+import { expectCommandHandledAbort } from "./helpers/command-handled.js";
 import {
   createAlibabaAuthModuleMock,
   createConfigModuleMock,
@@ -121,12 +121,12 @@ describe("/tokens_session_all command", () => {
     const client = createClient();
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "tokens_session_all",
         sessionID: "ses_parent",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(mocks.resolveSessionTree).toHaveBeenCalledWith("ses_parent");
     expect(mocks.aggregateUsage).toHaveBeenCalledWith({
@@ -164,12 +164,12 @@ describe("/tokens_session_all command", () => {
     const client = createClient();
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "tokens_session",
         sessionID: "ses_parent",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(mocks.resolveSessionTree).not.toHaveBeenCalled();
     expect(mocks.aggregateUsage).toHaveBeenCalledWith({
@@ -197,12 +197,12 @@ describe("/tokens_session_all command", () => {
     const client = createClient();
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "tokens_session_all",
         sessionID: "ses_missing",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(client.session.prompt).toHaveBeenCalledTimes(1);
     const injected = getPromptText(client);
@@ -221,12 +221,12 @@ describe("/tokens_session_all command", () => {
     const client = createClient();
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "tokens_session",
         sessionID: "ses_parent",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(client.session.prompt).toHaveBeenCalledTimes(1);
     const injected = getPromptText(client);

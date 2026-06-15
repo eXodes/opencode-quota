@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { COMMAND_HANDLED_SENTINEL } from "../src/lib/command-handled.js";
+import { expectCommandHandledAbort } from "./helpers/command-handled.js";
 import {
   createPluginTestClient,
   createPluginToolMockModule,
@@ -180,12 +180,12 @@ describe("quota surface parity regressions", () => {
 
     const { QuotaToastPlugin } = await import("../src/plugin.js");
     const hooks = await QuotaToastPlugin({ client } as any);
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-worktree-root-parity",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     const quotaOutput = getPromptText(client);
     expect(quotaOutput).toContain("64% left");
@@ -281,12 +281,12 @@ describe("quota surface parity regressions", () => {
 
     const { QuotaToastPlugin } = await import("../src/plugin.js");
     const hooks = await QuotaToastPlugin({ client } as any);
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-relative-config-root",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(getPromptText(client)).toBe("");
     expect(syntheticProvider.fetch).not.toHaveBeenCalled();
@@ -378,12 +378,12 @@ describe("quota surface parity regressions", () => {
 
     const { QuotaToastPlugin } = await import("../src/plugin.js");
     const hooks = await QuotaToastPlugin({ client } as any);
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-layered-provider-override",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     const quotaOutput = getPromptText(client);
     expect(quotaOutput).toContain("82% left");
@@ -465,12 +465,12 @@ describe("quota surface parity regressions", () => {
 
     const { QuotaToastPlugin } = await import("../src/plugin.js");
     const hooks = await QuotaToastPlugin({ client } as any);
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-synthetic-parity",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     const quotaOutput = getPromptText(client);
     expect(quotaOutput).toContain("44% left");
@@ -550,12 +550,12 @@ describe("quota surface parity regressions", () => {
 
     const { QuotaToastPlugin } = await import("../src/plugin.js");
     const hooks = await QuotaToastPlugin({ client } as any);
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-openai-style-divergence",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     const quotaOutput = getPromptText(client);
     expect(quotaOutput).toContain("95% left");

@@ -1,7 +1,7 @@
 import { rm } from "fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { COMMAND_HANDLED_SENTINEL } from "../src/lib/command-handled.js";
+import { expectCommandHandledAbort } from "./helpers/command-handled.js";
 import {
   createAlibabaAuthModuleMock,
   createConfigModuleMock,
@@ -193,12 +193,12 @@ describe("maintainer announcement plugin integration", () => {
       description: "List active bundled maintainer announcements.",
     });
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota_announcements",
         sessionID: "session-announcements",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(getPromptText(client)).toBe(
       "Maintainer announcements\n\n- If you use Copilot, GitHub billing is moving to AI Credits.\n  https://github.blog/example",
@@ -230,12 +230,12 @@ describe("maintainer announcement plugin integration", () => {
     const client = createClient();
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota_announcements",
         sessionID: "session-announcements",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(getPromptText(client)).toBe("Maintainer announcements\n\nNo current announcements.");
     expect(provider.isAvailable).toHaveBeenCalledOnce();
@@ -256,12 +256,12 @@ describe("maintainer announcement plugin integration", () => {
     const client = createClient();
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota_announcements",
         sessionID: "session-announcements",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(getPromptText(client)).toBe("Maintainer announcements\n\nNo current announcements.");
   });
@@ -271,13 +271,13 @@ describe("maintainer announcement plugin integration", () => {
     const client = createClient();
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota_announcements",
         arguments: "show copilot-credits",
         sessionID: "session-announcements",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(getPromptText(client)).toBe(
       "Invalid arguments for /quota_announcements\n\nThis command does not accept arguments.\n\nUsage: /quota_announcements",

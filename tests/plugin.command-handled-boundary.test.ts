@@ -1,7 +1,7 @@
 import { rm } from "fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { COMMAND_HANDLED_SENTINEL } from "../src/lib/command-handled.js";
+import { expectCommandHandledAbort } from "./helpers/command-handled.js";
 import {
   createConfigModuleMock,
   createPluginTestClient as createClient,
@@ -68,12 +68,12 @@ describe("plugin command handled boundary", () => {
     const client = createClient();
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-1",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(client.session.prompt).toHaveBeenCalledTimes(1);
   });
@@ -90,12 +90,12 @@ describe("plugin command handled boundary", () => {
     const { QuotaToastPlugin } = await import("../src/plugin.js");
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-2",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(client.session.prompt).toHaveBeenCalledTimes(1);
     const injected = getPromptText(client);
@@ -125,18 +125,18 @@ describe("plugin command handled boundary", () => {
     const client = createClient();
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "tokens_daily",
         sessionID: "session-disabled",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
-    await expect(
+    );
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "tokens_session_all",
         sessionID: "session-disabled-tree",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(mocks.maybeRefreshPricingSnapshot).not.toHaveBeenCalled();
     expect(client.session.prompt).not.toHaveBeenCalled();
@@ -156,12 +156,12 @@ describe("plugin command handled boundary", () => {
     await Promise.resolve();
     mocks.maybeRefreshPricingSnapshot.mockClear();
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "pricing_refresh",
         sessionID: "session-pricing-refresh",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(mocks.maybeRefreshPricingSnapshot).toHaveBeenCalledWith({
       reason: "manual",
@@ -179,12 +179,12 @@ describe("plugin command handled boundary", () => {
     const client = createClient();
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "pricing_refresh",
         sessionID: "session-disabled-refresh",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(mocks.maybeRefreshPricingSnapshot).not.toHaveBeenCalled();
     expect(client.session.prompt).not.toHaveBeenCalled();

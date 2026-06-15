@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { COMMAND_HANDLED_SENTINEL } from "../src/lib/command-handled.js";
+import { expectCommandHandledAbort } from "./helpers/command-handled.js";
 import { DEFAULT_CONFIG } from "../src/lib/types.js";
 import {
   createAlibabaAuthModuleMock,
@@ -149,12 +149,12 @@ describe("/quota_status command behavior", () => {
     const client = createClient({ modelID: "openai/gpt-5", providerID: "openai" });
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota_status",
         sessionID: "session-status",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(mocks.collectQuotaStatusLiveProbes).toHaveBeenCalledTimes(1);
     expect(mocks.inspectTuiConfig).toHaveBeenCalledWith({

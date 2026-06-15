@@ -1,7 +1,7 @@
 import { rm } from "fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { COMMAND_HANDLED_SENTINEL } from "../src/lib/command-handled.js";
+import { expectCommandHandledAbort } from "./helpers/command-handled.js";
 import { DEFAULT_CONFIG } from "../src/lib/types.js";
 import {
   createAlibabaAuthModuleMock,
@@ -105,12 +105,12 @@ describe("/quota command behavior", () => {
     const hooks = await QuotaToastPlugin({ client } as any);
 
     // Config is deferred — trigger a command to force the first config load.
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-init",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(mocks.loadConfig).toHaveBeenCalledWith(
       client,
@@ -311,12 +311,12 @@ describe("/quota command behavior", () => {
     const client = createClient();
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-quota-percent-display-boundary",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(client.session.prompt).toHaveBeenCalledTimes(1);
     const injected = getPromptText(client);
@@ -369,12 +369,12 @@ describe("/quota command behavior", () => {
     const client = createClient();
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-errors",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(client.session.prompt).toHaveBeenCalledTimes(1);
     const injected = getPromptText(client);
@@ -394,12 +394,12 @@ describe("/quota command behavior", () => {
     const client = createClient({ modelID: "auto", providerID: "cursor" });
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-fetch-failure",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(client.session.prompt).toHaveBeenCalledTimes(1);
     const injected = getPromptText(client);
@@ -641,12 +641,12 @@ describe("/quota command behavior", () => {
     const client = createClient({ modelID: "auto", providerID: "cursor" });
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-cursor-empty",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(client.session.prompt).toHaveBeenCalledTimes(1);
     const injected = getPromptText(client);
@@ -682,12 +682,12 @@ describe("/quota command behavior", () => {
     });
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-anthropic-empty",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(client.session.prompt).toHaveBeenCalledTimes(1);
     const injected = getPromptText(client);
@@ -725,12 +725,12 @@ describe("/quota command behavior", () => {
     });
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-anthropic-auto-empty",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(client.session.prompt).toHaveBeenCalledTimes(1);
     const injected = getPromptText(client);
@@ -762,12 +762,12 @@ describe("/quota command behavior", () => {
     const client = createClient({ modelID: "openai/gpt-5" });
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-filtered-out",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(provider.fetch).not.toHaveBeenCalled();
     expect(client.session.prompt).toHaveBeenCalledTimes(1);
@@ -807,21 +807,21 @@ describe("/quota command behavior", () => {
 
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-model-switch",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     currentSession = { data: { modelID: "openai/gpt-4.1", providerID: "openai" } };
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-model-switch",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(client.session.prompt).toHaveBeenCalledTimes(2);
     const firstInjected = getPromptText(client);
@@ -859,18 +859,18 @@ describe("/quota command behavior", () => {
     const client = createClient();
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-a",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
-    await expect(
+    );
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-b",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(provider.fetch).toHaveBeenCalledTimes(1);
     expect(getPromptText(client, 0)).toContain("95% left");
@@ -1108,8 +1108,8 @@ describe("/quota command behavior", () => {
       error: undefined,
     });
 
-    await expect(secondRun).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
-    await expect(firstRun).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    await expectCommandHandledAbort(secondRun);
+    await expectCommandHandledAbort(firstRun);
 
     const promptOutputs = client.session.prompt.mock.calls.map((call) => ({
       sessionID: call?.[0]?.path?.id,
@@ -1153,18 +1153,18 @@ describe("/quota command behavior", () => {
     const client = createClient({ modelID: "qwen-code/qwen3-coder-plus" });
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-qwen",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
-    await expect(
+    );
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-qwen",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(provider.fetch).toHaveBeenCalledTimes(2);
     const latest = getPromptText(client, 1);
@@ -1199,18 +1199,18 @@ describe("/quota command behavior", () => {
     const client = createClient({ modelID: "alibaba/qwen3-coder-plus" });
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-alibaba",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
-    await expect(
+    );
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-alibaba",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(provider.fetch).toHaveBeenCalledTimes(2);
     const latest = getPromptText(client, 1);
@@ -1240,18 +1240,18 @@ describe("/quota command behavior", () => {
     const client = createClient({ modelID: "auto", providerID: "cursor" });
     const hooks = await QuotaToastPlugin({ client } as any);
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-cursor",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
-    await expect(
+    );
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-cursor",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(provider.fetch).toHaveBeenCalledTimes(2);
     const latest = getPromptText(client, 1);
@@ -1285,12 +1285,12 @@ describe("/quota command behavior", () => {
     await Promise.resolve();
     mocks.maybeRefreshPricingSnapshot.mockClear();
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "pricing_refresh",
         sessionID: "session-pricing-refresh",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(mocks.maybeRefreshPricingSnapshot).toHaveBeenCalledWith({
       reason: "manual",
@@ -1312,23 +1312,23 @@ describe("/quota command behavior", () => {
     const hooks = await QuotaToastPlugin({ client } as any);
 
     // Force first config load so deferred init completes before our assertion.
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "quota",
         sessionID: "session-warmup",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
     await Promise.resolve();
     mocks.maybeRefreshPricingSnapshot.mockClear();
     client.session.prompt.mockClear();
 
-    await expect(
+    await expectCommandHandledAbort(
       hooks["command.execute.before"]?.({
         command: "pricing_refresh",
         arguments: '{"force":false}',
         sessionID: "session-pricing-refresh-invalid",
       } as any),
-    ).rejects.toThrow(COMMAND_HANDLED_SENTINEL);
+    );
 
     expect(mocks.maybeRefreshPricingSnapshot).not.toHaveBeenCalled();
     const injected = getPromptText(client);
