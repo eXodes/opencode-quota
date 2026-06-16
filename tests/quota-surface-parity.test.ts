@@ -3,13 +3,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { expectCommandHandledAbort } from "./helpers/command-handled.js";
 import {
   createPluginTestClient,
   createPluginToolMockModule,
   createPricingModuleMock,
   createProvidersRegistryModuleMock,
-  getPromptText,
 } from "./helpers/plugin-test-harness.js";
 
 const mocks = vi.hoisted(() => ({
@@ -71,6 +69,33 @@ function createClient(params: {
   });
 
   return client;
+}
+
+async function buildQuotaDialogOutputText(params: {
+  client: ReturnType<typeof createClient>;
+  sessionID: string;
+  roots?: { workspaceRoot?: string; worktreeRoot?: string; configRoot?: string; fallbackDirectory?: string; activeDirectory?: string };
+}): Promise<string> {
+  const { buildQuotaDialogCommandOutput } = await import("../src/lib/quota-dialog-commands.js");
+  const result = await buildQuotaDialogCommandOutput({
+    command: "quota",
+    client: params.client,
+    roots: params.roots ?? {
+      workspaceRoot: process.cwd(),
+      configRoot: process.cwd(),
+      fallbackDirectory: process.cwd(),
+    },
+    sessionID: params.sessionID,
+    resolveSessionMeta: async (sessionID) => {
+      const response = await params.client.session.get({ path: { id: sessionID } });
+      return {
+        modelID: response.data?.modelID,
+        providerID: response.data?.providerID,
+      };
+    },
+  });
+  expect(params.client.session.prompt).not.toHaveBeenCalled();
+  return result.state === "output" ? result.output : "";
 }
 
 async function resetQuotaStateForTests(): Promise<void> {
@@ -179,15 +204,17 @@ describe("quota surface parity regressions", () => {
     });
 
     const { QuotaToastPlugin } = await import("../src/plugin.js");
-    const hooks = await QuotaToastPlugin({ client } as any);
-    await expectCommandHandledAbort(
-      hooks["command.execute.before"]?.({
-        command: "quota",
-        sessionID: "session-worktree-root-parity",
-      } as any),
-    );
+    await QuotaToastPlugin({ client } as any);
 
-    const quotaOutput = getPromptText(client);
+    const quotaOutput = await buildQuotaDialogOutputText({
+      client,
+      sessionID: "session-worktree-root-parity",
+      roots: {
+        worktreeRoot: worktreeDir,
+        activeDirectory: nestedDir,
+        fallbackDirectory: nestedDir,
+      },
+    });
     expect(quotaOutput).toContain("64% left");
 
     await resetQuotaStateForTests();
@@ -280,15 +307,19 @@ describe("quota surface parity regressions", () => {
     });
 
     const { QuotaToastPlugin } = await import("../src/plugin.js");
-    const hooks = await QuotaToastPlugin({ client } as any);
-    await expectCommandHandledAbort(
-      hooks["command.execute.before"]?.({
-        command: "quota",
-        sessionID: "session-relative-config-root",
-      } as any),
-    );
+    await QuotaToastPlugin({ client } as any);
 
-    expect(getPromptText(client)).toBe("");
+    await expect(
+      buildQuotaDialogOutputText({
+        client,
+        sessionID: "session-relative-config-root",
+        roots: {
+          workspaceRoot: worktreeDir,
+          configRoot: worktreeDir,
+          fallbackDirectory: nestedDir,
+        },
+      }),
+    ).resolves.toBe("");
     expect(syntheticProvider.fetch).not.toHaveBeenCalled();
   });
 
@@ -377,15 +408,17 @@ describe("quota surface parity regressions", () => {
     });
 
     const { QuotaToastPlugin } = await import("../src/plugin.js");
-    const hooks = await QuotaToastPlugin({ client } as any);
-    await expectCommandHandledAbort(
-      hooks["command.execute.before"]?.({
-        command: "quota",
-        sessionID: "session-layered-provider-override",
-      } as any),
-    );
+    await QuotaToastPlugin({ client } as any);
 
-    const quotaOutput = getPromptText(client);
+    const quotaOutput = await buildQuotaDialogOutputText({
+      client,
+      sessionID: "session-layered-provider-override",
+      roots: {
+        worktreeRoot: worktreeDir,
+        activeDirectory: nestedDir,
+        fallbackDirectory: nestedDir,
+      },
+    });
     expect(quotaOutput).toContain("82% left");
     expect(quotaOutput).not.toContain("17% left");
 
@@ -464,15 +497,17 @@ describe("quota surface parity regressions", () => {
     });
 
     const { QuotaToastPlugin } = await import("../src/plugin.js");
-    const hooks = await QuotaToastPlugin({ client } as any);
-    await expectCommandHandledAbort(
-      hooks["command.execute.before"]?.({
-        command: "quota",
-        sessionID: "session-synthetic-parity",
-      } as any),
-    );
+    await QuotaToastPlugin({ client } as any);
 
-    const quotaOutput = getPromptText(client);
+    const quotaOutput = await buildQuotaDialogOutputText({
+      client,
+      sessionID: "session-synthetic-parity",
+      roots: {
+        worktreeRoot: worktreeDir,
+        activeDirectory: nestedDir,
+        fallbackDirectory: nestedDir,
+      },
+    });
     expect(quotaOutput).toContain("44% left");
     expect(quotaOutput).toContain("8% left");
 
@@ -549,15 +584,17 @@ describe("quota surface parity regressions", () => {
     });
 
     const { QuotaToastPlugin } = await import("../src/plugin.js");
-    const hooks = await QuotaToastPlugin({ client } as any);
-    await expectCommandHandledAbort(
-      hooks["command.execute.before"]?.({
-        command: "quota",
-        sessionID: "session-openai-style-divergence",
-      } as any),
-    );
+    await QuotaToastPlugin({ client } as any);
 
-    const quotaOutput = getPromptText(client);
+    const quotaOutput = await buildQuotaDialogOutputText({
+      client,
+      sessionID: "session-openai-style-divergence",
+      roots: {
+        worktreeRoot: worktreeDir,
+        activeDirectory: nestedDir,
+        fallbackDirectory: nestedDir,
+      },
+    });
     expect(quotaOutput).toContain("95% left");
     expect(quotaOutput).toContain("40% left");
 

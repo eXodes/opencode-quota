@@ -23,7 +23,7 @@ import {
 
 const COMPACT_UNAVAILABLE_TEXT = "Quota unavailable";
 
-function getTuiRuntimeRootHints(api: TuiPluginApi): RuntimeContextRootHints {
+export function getTuiRuntimeRootHints(api: TuiPluginApi): RuntimeContextRootHints {
   return {
     worktreeRoot: api.state.path.worktree,
     activeDirectory: api.state.path.directory,
@@ -35,7 +35,7 @@ export function resolveWorkspaceDir(api: TuiPluginApi): string {
   return resolveRuntimeContextRoots(getTuiRuntimeRootHints(api)).workspaceRoot;
 }
 
-function createTuiQuotaClient(api: TuiPluginApi) {
+export function createTuiQuotaClient(api: TuiPluginApi) {
   return {
     config: {
       providers: async () => {
@@ -76,17 +76,42 @@ function createTuiQuotaClient(api: TuiPluginApi) {
   };
 }
 
+export function normalizeTuiSessionID(sessionID: unknown): string | undefined {
+  if (typeof sessionID !== "string") return undefined;
+
+  const trimmed = sessionID.trim();
+  if (!trimmed) return undefined;
+
+  let decoded = trimmed;
+  try {
+    decoded = decodeURIComponent(trimmed).trim();
+  } catch {
+    decoded = trimmed;
+  }
+
+  if (!decoded || decoded.includes("{") || decoded.includes("}")) return undefined;
+  if (decoded === "sessionID" || decoded === "session_id" || decoded === "id") return undefined;
+
+  return trimmed;
+}
+
+function extractSessionModelMeta(input: unknown): SessionModelMeta {
+  if (!input || typeof input !== "object") return {};
+  const item = input as {
+    providerID?: string;
+    modelID?: string;
+    model?: { providerID?: string; modelID?: string };
+  };
+  const providerID = item.providerID ?? item.model?.providerID;
+  const modelID = item.modelID ?? item.model?.modelID;
+  return providerID || modelID ? { providerID, modelID } : {};
+}
+
 function getMessageSessionModelMeta(api: TuiPluginApi, sessionID: string): SessionModelMeta {
   const messages = api.state.session.messages(sessionID);
   for (let index = messages.length - 1; index >= 0; index--) {
-    const message = messages[index] as
-      | { providerID?: string; modelID?: string; model?: { providerID?: string; modelID?: string } }
-      | undefined;
-    const providerID = message?.providerID ?? message?.model?.providerID;
-    const modelID = message?.modelID ?? message?.model?.modelID;
-    if (providerID || modelID) {
-      return { providerID, modelID };
-    }
+    const meta = extractSessionModelMeta(messages[index]);
+    if (meta.providerID || meta.modelID) return meta;
   }
   return {};
 }
@@ -95,19 +120,23 @@ export async function getTuiSessionModelMeta(
   api: TuiPluginApi,
   sessionID: string,
 ): Promise<SessionModelMeta> {
+  const safeSessionID = normalizeTuiSessionID(sessionID);
+  if (!safeSessionID) return {};
+
+  const stateSession = api.state.session as { get?: (sessionID: string) => unknown };
+  const stateMeta = extractSessionModelMeta(stateSession.get?.(safeSessionID));
+  if (stateMeta.providerID || stateMeta.modelID) return stateMeta;
+
   try {
-    const response = await api.client.session?.get?.({ path: { id: sessionID } });
-    if (response?.data?.providerID || response?.data?.modelID) {
-      return {
-        providerID: response.data?.providerID,
-        modelID: response.data?.modelID,
-      };
-    }
+    const sessionGet = (api.client.session as any)?.get;
+    const response = await sessionGet?.({ sessionID: safeSessionID });
+    const meta = extractSessionModelMeta(response?.data);
+    if (meta.providerID || meta.modelID) return meta;
   } catch {
     // Fall back to session message state below.
   }
 
-  return getMessageSessionModelMeta(api, sessionID);
+  return getMessageSessionModelMeta(api, safeSessionID);
 }
 
 export type TuiSidebarPanelRegistration = {

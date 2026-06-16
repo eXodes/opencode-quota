@@ -21,9 +21,11 @@ describe("command handled abort", () => {
 
     expect(err).toBeInstanceOf(Error);
     expect(isCommandHandledError(err)).toBe(true);
-    expect((err as Error).message).not.toContain(COMMAND_HANDLED_SENTINEL);
+    expect((err as Error).message).toBe("");
+    expect((err as Error).name).toBe("");
+    expect(String(err)).toBe("");
+    expect((err as Error).stack).toBe("");
     expect(String(err)).not.toContain(COMMAND_HANDLED_SENTINEL);
-    expect((err as Error).stack ?? "").not.toContain(COMMAND_HANDLED_SENTINEL);
   });
 
   it("recognizes legacy sentinel-message errors", () => {

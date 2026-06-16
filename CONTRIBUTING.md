@@ -81,10 +81,11 @@ Recommended settings for `main`:
 ## Repo Guardrails
 
 - Never invoke an LLM/model API to compute toast/report output. Everything must remain local and deterministic.
-- Preserve slash command throw-based handled-abort behavior in `command.execute.before`.
-- Keep handled aborts quiet: use `handled()` instead of throwing `COMMAND_HANDLED_SENTINEL` directly, and assert handled command aborts through `isCommandHandledError(...)`.
-- Do not catch `isCommandHandledError(...)` and return normally.
-- Keep `tests/plugin.command-handled-boundary.test.ts` and `tests/command-handled.test.ts` aligned with this invariant.
+- Keep deterministic slash command output on the TUI dialog/palette path, not `command.execute.before`. Returning normally from that server hook lets OpenCode continue into `prompt(...)`, while throwing from it can surface hook errors.
+- Do not use `session.prompt()` for migrated slash command outputs (`/quota`, `/quota_status`, `/quota_announcements`, `/pricing_refresh`, `/tokens_*`). They must remain local, deterministic TUI dialog output with no model call and no OpenCode session transcript write.
+- Keep `handled()` / `isCommandHandledError(...)` tests only for compatibility of the branded sentinel helper; do not reintroduce server slash command ownership for migrated dialog commands.
+- `injectRawOutput()` still uses `session.prompt({ noReply: true, ignored: true })` for the server `tool.quota_status` compatibility path. Do not reuse it for dialog slash commands.
+- Keep `tests/plugin.command-handled-boundary.test.ts`, `tests/tui-smoke.test.ts`, and `tests/command-handled.test.ts` aligned with these invariants.
 
 Additional boundary tests to keep healthy when touching plugin/provider logic:
 

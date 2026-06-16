@@ -10,7 +10,7 @@ export const COMMAND_HANDLED_SENTINEL = "__QUOTA_COMMAND_HANDLED__" as const;
 const COMMAND_HANDLED_ERROR_BRAND = Symbol.for("@slkiser/opencode-quota/command-handled");
 
 function createCommandHandledError(): Error {
-  const err = new Error();
+  const err = Object.create(Error.prototype) as Error;
   Object.defineProperties(err, {
     [COMMAND_HANDLED_ERROR_BRAND]: { value: true },
     message: { value: "", configurable: true, writable: true },

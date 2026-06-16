@@ -1,7 +1,6 @@
 import { rm } from "fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { expectCommandHandledAbort } from "./helpers/command-handled.js";
 import {
   createAlibabaAuthModuleMock,
   createConfigModuleMock,
@@ -12,7 +11,6 @@ import {
   createPricingModuleMock,
   createProvidersRegistryModuleMock,
   createQwenAuthModuleMock,
-  getPromptText,
   getToastMessage,
   makeQuotaToastTestConfig,
   seedDefaultPluginBootstrapMocks,
@@ -141,6 +139,27 @@ async function runSuccessfulQuestion(
   );
 }
 
+async function buildAnnouncementsDialogOutput(params: {
+  client: ReturnType<typeof createClient>;
+  arguments?: string;
+}) {
+  const { buildQuotaDialogCommandOutput } = await import("../src/lib/quota-dialog-commands.js");
+  const result = await buildQuotaDialogCommandOutput({
+    command: "quota_announcements",
+    arguments: params.arguments,
+    client: params.client,
+    roots: {
+      workspaceRoot: process.cwd(),
+      configRoot: process.cwd(),
+      fallbackDirectory: process.cwd(),
+    },
+    sessionID: "session-announcements",
+  });
+  expect(params.client.session.prompt).not.toHaveBeenCalled();
+  expect(result.state).toBe("output");
+  return result.state === "output" ? result.output : "";
+}
+
 async function flushMaintainerFallbackWork(): Promise<void> {
   for (let i = 0; i < 5; i += 1) {
     await Promise.resolve();
@@ -174,7 +193,7 @@ describe("maintainer announcement plugin integration", () => {
     await rm(TEST_RUNTIME_ROOT, { recursive: true, force: true });
   });
 
-  it("registers and handles the no-arg /quota_announcements command", async () => {
+  it("builds the no-arg /quota_announcements dialog output", async () => {
     const provider = {
       id: "copilot",
       isAvailable: vi.fn().mockResolvedValue(true),
@@ -188,24 +207,16 @@ describe("maintainer announcement plugin integration", () => {
     const cfg: any = {};
 
     await hooks.config?.(cfg);
-    expect(cfg.command.quota_announcements).toEqual({
-      template: "/quota_announcements",
-      description: "List active bundled maintainer announcements.",
-    });
+    expect(cfg.command?.quota_announcements).toBeUndefined();
 
-    await expectCommandHandledAbort(
-      hooks["command.execute.before"]?.({
-        command: "quota_announcements",
-        sessionID: "session-announcements",
-      } as any),
-    );
+    const output = await buildAnnouncementsDialogOutput({ client });
 
-    expect(getPromptText(client)).toBe(
+    expect(output).toBe(
       "Maintainer announcements\n\n- If you use Copilot, GitHub billing is moving to AI Credits.\n  https://github.blog/example",
     );
-    expect(getPromptText(client)).not.toContain("copilot-credits");
-    expect(getPromptText(client)).not.toContain("source:");
-    expect(getPromptText(client)).not.toContain("state");
+    expect(output).not.toContain("copilot-credits");
+    expect(output).not.toContain("source:");
+    expect(output).not.toContain("state");
     expect(provider.isAvailable).toHaveBeenCalledOnce();
     expect(announcementMocks.getMaintainerAnnouncementsSummary).toHaveBeenCalledWith(
       expect.objectContaining({ enabledProviders: ["copilot"] }),
@@ -228,16 +239,11 @@ describe("maintainer announcement plugin integration", () => {
 
     const { QuotaToastPlugin } = await import("../src/plugin.js");
     const client = createClient();
-    const hooks = await QuotaToastPlugin({ client } as any);
+    await QuotaToastPlugin({ client } as any);
 
-    await expectCommandHandledAbort(
-      hooks["command.execute.before"]?.({
-        command: "quota_announcements",
-        sessionID: "session-announcements",
-      } as any),
+    await expect(buildAnnouncementsDialogOutput({ client })).resolves.toBe(
+      "Maintainer announcements\n\nNo current announcements.",
     );
-
-    expect(getPromptText(client)).toBe("Maintainer announcements\n\nNo current announcements.");
     expect(provider.isAvailable).toHaveBeenCalledOnce();
     expect(announcementMocks.getMaintainerAnnouncementsSummary).toHaveBeenCalledWith(
       expect.objectContaining({ enabledProviders: [] }),
@@ -254,32 +260,22 @@ describe("maintainer announcement plugin integration", () => {
 
     const { QuotaToastPlugin } = await import("../src/plugin.js");
     const client = createClient();
-    const hooks = await QuotaToastPlugin({ client } as any);
+    await QuotaToastPlugin({ client } as any);
 
-    await expectCommandHandledAbort(
-      hooks["command.execute.before"]?.({
-        command: "quota_announcements",
-        sessionID: "session-announcements",
-      } as any),
+    await expect(buildAnnouncementsDialogOutput({ client })).resolves.toBe(
+      "Maintainer announcements\n\nNo current announcements.",
     );
-
-    expect(getPromptText(client)).toBe("Maintainer announcements\n\nNo current announcements.");
   });
 
   it("rejects /quota_announcements arguments", async () => {
     const { QuotaToastPlugin } = await import("../src/plugin.js");
     const client = createClient();
-    const hooks = await QuotaToastPlugin({ client } as any);
+    await QuotaToastPlugin({ client } as any);
 
-    await expectCommandHandledAbort(
-      hooks["command.execute.before"]?.({
-        command: "quota_announcements",
-        arguments: "show copilot-credits",
-        sessionID: "session-announcements",
-      } as any),
-    );
-
-    expect(getPromptText(client)).toBe(
+    await expect(buildAnnouncementsDialogOutput({
+      client,
+      arguments: "show copilot-credits",
+    })).resolves.toBe(
       "Invalid arguments for /quota_announcements\n\nThis command does not accept arguments.\n\nUsage: /quota_announcements",
     );
   });

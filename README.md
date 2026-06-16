@@ -111,7 +111,7 @@ Use the installer when possible. For manual setup, use the same OpenCode config 
 
 ### 1. Add the server plugin (required)
 
-This enables providers, slash commands, terminal checks, and popup toasts. Add this to `opencode.json` or `opencode.jsonc`:
+This enables providers, terminal checks, popup toasts, and the `tool.quota_status` tool. Add this to `opencode.json` or `opencode.jsonc`:
 
 ```jsonc
 {
@@ -120,9 +120,9 @@ This enables providers, slash commands, terminal checks, and popup toasts. Add t
 }
 ```
 
-### 2. Add the TUI plugin (for Sidebar panel, Compact status line, or announcement home notices)
+### 2. Add the TUI plugin (for dialog slash commands and TUI surfaces)
 
-If you want the Sidebar panel, Compact status line, or maintainer announcement home notices, also add this to `tui.json` or `tui.jsonc`:
+Add this to `tui.json` or `tui.jsonc` for `/quota`, `/quota_status`, `/quota_announcements`, `/pricing_refresh`, `/tokens_*` dialog slash commands, the Sidebar panel, Compact status line, and maintainer announcement home notices:
 
 ```jsonc
 {
@@ -171,7 +171,8 @@ All UI surfaces use the same quota data. Put these settings in `opencode-quota/q
 | Toast | `enableToast: true` | Popup toast after idle/question/compact events. Requires the server plugin entry above. |
 | Compact status line | `tuiCompactStatus.enabled: true` | Short text-only quota line at the home bottom and chat/session prompt locations, for example `Copilot 94% | OpenAI Pro 5h 100%, 7d 100%`. Requires the TUI plugin entry above. |
 | Maintainer announcement notice | `maintainerAnnouncements.enabled: true`, `maintainerAnnouncements.home: true` | Prefers the TUI home notice when the quota TUI plugin is configured. Without the TUI plugin, shows the same count-only notice once after the first visible quota toast. |
-| Terminal/slash only | `enableToast: false`, `tuiSidebarPanel.enabled: false`, `tuiCompactStatus.enabled: false`, `maintainerAnnouncements.enabled: false` | Keeps `/quota`, `/quota_status`, `/quota_announcements`, and terminal checks. |
+| Dialog slash commands | TUI plugin entry in `tui.json` | `/quota`, `/quota_status`, `/quota_announcements`, `/pricing_refresh`, and `/tokens_*` open local TUI dialogs. They do not call the model and do not write command output to the OpenCode session transcript. |
+| Terminal only | `enableToast: false`, `tuiSidebarPanel.enabled: false`, `tuiCompactStatus.enabled: false`, `maintainerAnnouncements.enabled: false` | Keeps terminal checks while hiding optional toast/sidebar/compact/home surfaces. |
 
 Selecting Compact status line in the installer enables both compact surfaces by default. To keep compact status home-only, set `tuiCompactStatus.sessionPrompt: false`.
 
@@ -180,6 +181,8 @@ In the sidebar panel, click the `Quota` header to switch between the compact sum
 For more examples, see [Common configuration](#common-configuration). For every option, see [Full configuration reference](#full-configuration-reference).
 
 ## Commands
+
+Slash commands require the TUI plugin entry in `tui.json` and open deterministic local dialogs. They do not invoke a model and do not write command output into the OpenCode session transcript. Session-scoped token commands require an active TUI session.
 
 | Command | What it shows |
 | --- | --- |
@@ -563,6 +566,7 @@ Start here when quota or token data looks wrong.
 
 | Symptom | Try this |
 | --- | --- |
+| `/quota` or other slash commands do not appear | Confirm `tui.json` includes `@slkiser/opencode-quota`, then restart OpenCode. |
 | `/quota` shows no providers | Run `/quota_status`, then check provider detection and auth. |
 | Sidebar panel does not appear | Confirm `tui.json` includes `@slkiser/opencode-quota`, restart OpenCode, and check `tuiSidebarPanel.enabled`. |
 | Compact status line does not appear anywhere | Confirm `tui.json` includes `@slkiser/opencode-quota`, restart OpenCode, check `tuiCompactStatus.enabled`, and check whether `tuiCompactStatus.suppressWhenNativeProviderQuota` is hiding it because OpenCode exposes native provider-quota support. |
@@ -571,6 +575,7 @@ Start here when quota or token data looks wrong.
 | Announcement home notice does not appear | Confirm `tui.json` includes `@slkiser/opencode-quota`, restart OpenCode, then check `maintainerAnnouncements.enabled`, `maintainerAnnouncements.home`, and the active count in the `maintainer_announcements` section of `/quota_status`. |
 | Token reports are empty | Start OpenCode once so `opencode.db` exists, then run a session with model usage. |
 | Pricing looks stale | Run `/pricing_refresh`. |
+| `/tokens_between` needs dates | Run `/tokens_between YYYY-MM-DD YYYY-MM-DD`; if your OpenCode build does not pass slash arguments to TUI commands, the dialog shows the expected format. |
 
 ### Provider troubleshooting
 

@@ -43,6 +43,7 @@ vi.mock("../src/lib/tui-compact-format.js", async () => {
 import {
   getTuiSessionModelMeta,
   loadSidebarPanel,
+  normalizeTuiSessionID,
   loadTuiHomeBottomStatus,
   loadTuiHomeCompactStatus,
   loadTuiSessionQuotaSurfaces,
@@ -638,6 +639,72 @@ describe("tui runtime helpers", () => {
     expect(runtimeProviders).toHaveBeenCalledOnce();
   });
 
+  it("normalizes placeholder TUI session route params as unavailable", () => {
+    expect(normalizeTuiSessionID("%7BsessionID%7D")).toBeUndefined();
+    expect(normalizeTuiSessionID("{sessionID}")).toBeUndefined();
+    expect(normalizeTuiSessionID(" session-3 ")).toBe("session-3");
+  });
+
+  it("uses the TUI session.get parameter shape for session model metadata", async () => {
+    const sessionGet = vi.fn().mockResolvedValue({
+      data: { providerID: "openai", modelID: "gpt-5" },
+    });
+    const messages = vi.fn(() => [{ providerID: "cursor", modelID: "claude-3.7-sonnet" }]);
+
+    const meta = await getTuiSessionModelMeta(
+      {
+        client: {
+          session: {
+            get: sessionGet,
+          },
+        },
+        state: {
+          session: {
+            messages,
+          },
+        },
+      } as any,
+      "session-3",
+    );
+
+    expect(sessionGet).toHaveBeenCalledWith({ sessionID: "session-3" });
+    expect(messages).not.toHaveBeenCalled();
+    expect(meta).toEqual({
+      providerID: "openai",
+      modelID: "gpt-5",
+    });
+  });
+
+  it("does not call session APIs for placeholder TUI session IDs", async () => {
+    const stateGet = vi.fn(() => {
+      throw new Error("should not be called");
+    });
+    const sessionGet = vi.fn().mockRejectedValue(new Error("should not be called"));
+    const messages = vi.fn(() => []);
+
+    const meta = await getTuiSessionModelMeta(
+      {
+        client: {
+          session: {
+            get: sessionGet,
+          },
+        },
+        state: {
+          session: {
+            get: stateGet,
+            messages,
+          },
+        },
+      } as any,
+      "%7BsessionID%7D",
+    );
+
+    expect(meta).toEqual({});
+    expect(stateGet).not.toHaveBeenCalled();
+    expect(sessionGet).not.toHaveBeenCalled();
+    expect(messages).not.toHaveBeenCalled();
+  });
+
   it("falls back to session messages when session.get fails under onlyCurrentModel", async () => {
     const sessionGet = vi.fn().mockRejectedValue(new Error("boom"));
 
@@ -660,7 +727,7 @@ describe("tui runtime helpers", () => {
       "session-3",
     );
 
-    expect(sessionGet).toHaveBeenCalledWith({ path: { id: "session-3" } });
+    expect(sessionGet).toHaveBeenCalledWith({ sessionID: "session-3" });
     expect(meta).toEqual({
       providerID: "cursor",
       modelID: "claude-3.7-sonnet",
