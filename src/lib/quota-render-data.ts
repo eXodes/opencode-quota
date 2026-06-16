@@ -76,6 +76,23 @@ async function getProviderAvailability(params: {
   }
 }
 
+export async function collectConcreteEnabledProviderIds(params: {
+  providers: QuotaProvider[];
+  ctx: QuotaProviderContext;
+  enabledProviders: string[] | "auto";
+}): Promise<string[]> {
+  const candidates =
+    params.enabledProviders === "auto"
+      ? params.providers
+      : params.providers.filter((provider) => params.enabledProviders.includes(provider.id));
+
+  const availability = await Promise.all(
+    candidates.map((provider) => getProviderAvailability({ provider, ctx: params.ctx })),
+  );
+
+  return availability.filter((item) => item.ok).map((item) => item.provider.id);
+}
+
 export type CollectQuotaRenderDataResult = {
   selection: QuotaRenderSelection | null;
   availability: QuotaAvailability[];
@@ -127,7 +144,7 @@ export function matchesQuotaProviderCurrentSelection(params: {
   currentProviderID?: string;
   enabledProviders?: string[] | "auto";
 }): boolean {
-  if (!params.currentModel && params.currentProviderID) {
+  if (params.currentProviderID) {
     const normalizedCurrentProviderID = normalizeQuotaProviderId(params.currentProviderID);
     if (params.provider.id === normalizedCurrentProviderID) {
       return true;

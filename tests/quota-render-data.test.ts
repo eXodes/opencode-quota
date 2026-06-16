@@ -382,6 +382,22 @@ describe("collectQuotaRenderData shared quota state", () => {
     ).toBe(true);
   });
 
+  it("uses currentProviderID as a positive match when currentModel is also present", () => {
+    const provider = {
+      id: "openai",
+      matchesCurrentModel: vi.fn().mockReturnValue(false),
+    };
+
+    expect(
+      matchesQuotaProviderCurrentSelection({
+        provider: provider as any,
+        currentProviderID: "openai",
+        currentModel: "anthropic/claude-sonnet-4",
+      }),
+    ).toBe(true);
+    expect(provider.matchesCurrentModel).not.toHaveBeenCalled();
+  });
+
   it("passes explicit enabledProviders context into current-model matching", () => {
     const provider = {
       id: "minimax-china-coding-plan",

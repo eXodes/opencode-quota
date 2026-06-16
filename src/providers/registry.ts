@@ -13,7 +13,6 @@ import { googleAntigravityProvider } from "./google-antigravity.js";
 import { googleGeminiCliProvider } from "./google-gemini-cli.js";
 import { syntheticProvider } from "./synthetic.js";
 import { chutesProvider } from "./chutes.js";
-import { crofProvider } from "./crof.js";
 import { qwenCodeProvider } from "./qwen-code.js";
 import { alibabaCodingPlanProvider } from "./alibaba-coding-plan.js";
 import { zaiProvider } from "./zai.js";
@@ -26,6 +25,7 @@ import {
 import { opencodeGoProvider } from "./opencode-go.js";
 import { kimiCodeProvider } from "./kimi-code.js";
 import { deepseekProvider } from "./deepseek.js";
+import { ollamaCloudProvider } from "./ollama-cloud.js";
 
 export function getProviders(): QuotaProvider[] {
   // Order here defines display ordering in the toast.
@@ -38,7 +38,6 @@ export function getProviders(): QuotaProvider[] {
     alibabaCodingPlanProvider,
     syntheticProvider,
     chutesProvider,
-    crofProvider,
     googleAntigravityProvider,
     googleGeminiCliProvider,
     zaiProvider,
@@ -49,5 +48,6 @@ export function getProviders(): QuotaProvider[] {
     kimiCodeProvider,
     deepseekProvider,
     opencodeGoProvider,
+    ollamaCloudProvider,
   ];
 }

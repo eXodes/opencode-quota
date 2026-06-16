@@ -9,7 +9,6 @@ import { inspectGeminiCliAuthPresence } from "./google-gemini-cli.js";
 import { inspectAntigravityAccountsPresence } from "./google.js";
 import { getAnthropicDiagnostics } from "./anthropic.js";
 import { getChutesKeyDiagnostics } from "./chutes.js";
-import { getCrofKeyDiagnostics } from "./crof.js";
 import { getNanoGptKeyDiagnostics, queryNanoGptQuota } from "./nanogpt.js";
 import { getDeepSeekKeyDiagnostics } from "./deepseek.js";
 import { getSyntheticKeyDiagnostics } from "./synthetic.js";
@@ -199,18 +198,6 @@ function formatSettingSources(sources: QuotaToastSettingSources | undefined): st
   return parts.length > 0 ? parts.join(" | ") : "(none)";
 }
 
-function formatSelectedSettingSources(
-  sources: QuotaToastSettingSources | undefined,
-  keys: Array<keyof QuotaToastSettingSources>,
-): string {
-  if (!sources) return "(none)";
-
-  const parts = keys
-    .filter((key) => typeof sources[key] === "string" && sources[key]!.length > 0)
-    .map((key) => `${key}<=${sources[key]}`);
-
-  return parts.length > 0 ? parts.join(" | ") : "(none)";
-}
 
 function getConfigPrecedenceLabel(configSource: string): string {
   switch (configSource) {
@@ -527,14 +514,6 @@ function supportedProviderPricingRow(params: {
       id,
       pricing: "no",
       notes: "account balance only (not token-priced)",
-    };
-  }
-
-  if (id === "crof") {
-    return {
-      id,
-      pricing: "no",
-      notes: "request quota + credits (not token-priced)",
     };
   }
 
@@ -1339,16 +1318,6 @@ export async function buildQuotaStatusReport(params: {
   ];
   appendProviderCompactLiveProbeRows(chutesRows, "chutes", params.providerLiveProbes);
   sections.push(createKvSection("chutes", "chutes:", chutesRows));
-
-  const crofDiag = await readBasicApiKeyDiagnostics(getCrofKeyDiagnostics);
-  const crofRows: ReportKvRow[] = [
-    {
-      key: "crof api key",
-      value: formatInlineApiKeyDiagnosticsValue(crofDiag),
-    },
-  ];
-  appendProviderCompactLiveProbeRows(crofRows, "crof", params.providerLiveProbes);
-  sections.push(createKvSection("crof", "crof:", crofRows));
 
   const deepSeekDiag = await readApiKeyDiagnosticsWithAuthPaths(getDeepSeekKeyDiagnostics);
   const deepSeekRows: ReportKvRow[] = [

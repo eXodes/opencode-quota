@@ -60,6 +60,7 @@ vi.mock("../src/lib/quota-export.js", async () => {
 import {
   getTuiSessionModelMeta,
   loadSidebarPanel,
+  normalizeTuiSessionID,
   loadTuiHomeBottomStatus,
   loadTuiHomeCompactStatus,
   loadTuiSessionQuotaSurfaces,
@@ -656,6 +657,72 @@ describe("tui runtime helpers", () => {
     expect(runtimeProviders).toHaveBeenCalledOnce();
   });
 
+  it("normalizes placeholder TUI session route params as unavailable", () => {
+    expect(normalizeTuiSessionID("%7BsessionID%7D")).toBeUndefined();
+    expect(normalizeTuiSessionID("{sessionID}")).toBeUndefined();
+    expect(normalizeTuiSessionID(" session-3 ")).toBe("session-3");
+  });
+
+  it("uses the TUI session.get parameter shape for session model metadata", async () => {
+    const sessionGet = vi.fn().mockResolvedValue({
+      data: { providerID: "openai", modelID: "gpt-5" },
+    });
+    const messages = vi.fn(() => [{ providerID: "cursor", modelID: "claude-3.7-sonnet" }]);
+
+    const meta = await getTuiSessionModelMeta(
+      {
+        client: {
+          session: {
+            get: sessionGet,
+          },
+        },
+        state: {
+          session: {
+            messages,
+          },
+        },
+      } as any,
+      "session-3",
+    );
+
+    expect(sessionGet).toHaveBeenCalledWith({ sessionID: "session-3" });
+    expect(messages).not.toHaveBeenCalled();
+    expect(meta).toEqual({
+      providerID: "openai",
+      modelID: "gpt-5",
+    });
+  });
+
+  it("does not call session APIs for placeholder TUI session IDs", async () => {
+    const stateGet = vi.fn(() => {
+      throw new Error("should not be called");
+    });
+    const sessionGet = vi.fn().mockRejectedValue(new Error("should not be called"));
+    const messages = vi.fn(() => []);
+
+    const meta = await getTuiSessionModelMeta(
+      {
+        client: {
+          session: {
+            get: sessionGet,
+          },
+        },
+        state: {
+          session: {
+            get: stateGet,
+            messages,
+          },
+        },
+      } as any,
+      "%7BsessionID%7D",
+    );
+
+    expect(meta).toEqual({});
+    expect(stateGet).not.toHaveBeenCalled();
+    expect(sessionGet).not.toHaveBeenCalled();
+    expect(messages).not.toHaveBeenCalled();
+  });
+
   it("falls back to session messages when session.get fails under onlyCurrentModel", async () => {
     const sessionGet = vi.fn().mockRejectedValue(new Error("boom"));
 
@@ -678,7 +745,7 @@ describe("tui runtime helpers", () => {
       "session-3",
     );
 
-    expect(sessionGet).toHaveBeenCalledWith({ path: { id: "session-3" } });
+    expect(sessionGet).toHaveBeenCalledWith({ sessionID: "session-3" });
     expect(meta).toEqual({
       providerID: "cursor",
       modelID: "claude-3.7-sonnet",
@@ -1223,6 +1290,108 @@ describe("tui runtime helpers", () => {
       announcementText: "Notice: Maintainer announcement available. Run /quota_announcements.",
       compact: { status: "disabled" },
     });
+    expect(collectQuotaRenderData).not.toHaveBeenCalled();
+  });
+
+  it("loads provider-targeted announcement-only home bottom for detected providers", async () => {
+    writeFileSync(
+      join(worktreeDir, "opencode.json"),
+      JSON.stringify({
+        experimental: {
+          quotaToast: {
+            enabled: true,
+            tuiCompactStatus: {
+              enabled: false,
+              homeBottom: false,
+            },
+            maintainerAnnouncements: {
+              enabled: true,
+              home: true,
+            },
+          },
+        },
+      }),
+      "utf8",
+    );
+
+    const bottom = await loadTuiHomeBottomStatus({
+      api: {
+        state: {
+          provider: [{ id: "copilot" }],
+          path: {
+            worktree: worktreeDir,
+            directory: nestedDir,
+          },
+          session: {
+            messages: () => [],
+          },
+        },
+        client: {},
+      } as any,
+      nowMs: Date.parse("2026-05-21T12:00:00.000Z"),
+      announcements: [
+        {
+          id: "copilot-credits",
+          message: "If you use Copilot, GitHub billing is moving to AI Credits.",
+          providerIds: ["copilot"],
+        },
+      ],
+    });
+
+    expect(bottom).toEqual({
+      status: "ready",
+      announcementText: "Notice: Maintainer announcement available. Run /quota_announcements.",
+      compact: { status: "disabled" },
+    });
+    expect(collectQuotaRenderData).not.toHaveBeenCalled();
+  });
+
+  it("does not render provider-targeted announcement-only home bottom without a detected provider", async () => {
+    writeFileSync(
+      join(worktreeDir, "opencode.json"),
+      JSON.stringify({
+        experimental: {
+          quotaToast: {
+            enabled: true,
+            tuiCompactStatus: {
+              enabled: false,
+              homeBottom: false,
+            },
+            maintainerAnnouncements: {
+              enabled: true,
+              home: true,
+            },
+          },
+        },
+      }),
+      "utf8",
+    );
+
+    const bottom = await loadTuiHomeBottomStatus({
+      api: {
+        state: {
+          provider: [{ id: "openai" }],
+          path: {
+            worktree: worktreeDir,
+            directory: nestedDir,
+          },
+          session: {
+            messages: () => [],
+          },
+        },
+        client: {},
+      } as any,
+      nowMs: Date.parse("2026-05-21T12:00:00.000Z"),
+      announcements: [
+        {
+          id: "copilot-credits",
+          message: "If you use Copilot, GitHub billing is moving to AI Credits.",
+          providerIds: ["copilot"],
+        },
+      ],
+    });
+
+    expect(bottom).toEqual({ status: "disabled", compact: { status: "disabled" } });
     expect(collectQuotaRenderData).not.toHaveBeenCalled();
   });
 

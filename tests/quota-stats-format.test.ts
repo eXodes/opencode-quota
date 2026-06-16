@@ -77,6 +77,61 @@ describe("formatQuotaStatsReport (markdown)", () => {
     expect(out).toContain("Cursor");
   });
 
+  it("compacts token dialog table headers and middle-ellipsizes long model names when requested", () => {
+    const longModel = "openai/gpt-5.2-super-long-context-2026-06-16";
+    const r = makeEmptyResult({
+      totals: {
+        priced: { input: 1000, output: 2000, reasoning: 0, cache_read: 100, cache_write: 50 },
+        unknown: { input: 0, output: 0, reasoning: 0, cache_read: 0, cache_write: 0 },
+        unpriced: { input: 0, output: 0, reasoning: 0, cache_read: 0, cache_write: 0 },
+        costUsd: 1.23,
+        messageCount: 2,
+        sessionCount: 1,
+      },
+      bySourceModel: [
+        {
+          sourceProviderID: "openai",
+          sourceModelID: longModel,
+          tokens: { input: 1000, output: 2000, reasoning: 0, cache_read: 100, cache_write: 50 },
+          costUsd: 1.23,
+          messageCount: 2,
+        },
+      ],
+    });
+
+    const standard = formatQuotaStatsReport({
+      title: "Tokens used (Last 24 Hours) (/tokens_daily)",
+      result: r,
+    });
+    expect(standard).toContain(longModel);
+    expect(standard).toContain("Input");
+    expect(standard).toContain("Output");
+    expect(standard).toContain("C.Read");
+
+    const compact = formatQuotaStatsReport({
+      title: "Tokens used (Last 24 Hours) (/tokens_daily)",
+      result: r,
+      tableOptions: {
+        compactHeaders: true,
+        modelNameMaxWidth: 20,
+      },
+    });
+
+    expect(compact).not.toContain(longModel);
+    expect(compact).toContain("openai/gpt…026-06-16");
+    expect(compact).toContain("Msgs");
+    expect(compact).toContain("Sess");
+    expect(compact).toContain("Tok");
+    expect(compact).toContain("In");
+    expect(compact).toContain("Out");
+    expect(compact).toContain("C.Rd");
+    expect(compact).toContain("C.Wr");
+    expect(compact).not.toContain("Input");
+    expect(compact).not.toContain("Output");
+    expect(compact).not.toContain("C.Read");
+    expect(compact).not.toContain("C.Write");
+  });
+
   it("omits Reasoning column when all reasoning is zero", () => {
     const r = makeEmptyResult({
       totals: {
@@ -367,7 +422,7 @@ describe("formatQuotaStatsReport (markdown)", () => {
         {
           key: {
             sourceProviderID: "opencode",
-            sourceModelID: "foo-model",
+            sourceModelID: " foo-model ",
             mappedModel: "foo-model",
             providerCandidates: ["openai", "anthropic"],
           },
@@ -383,6 +438,7 @@ describe("formatQuotaStatsReport (markdown)", () => {
     });
 
     expect(out).toContain("candidates: openai,anthropic");
+    expect(out).toContain("| OpenCode |  foo-model  |");
   });
 
   it("locks the full markdown report layout for the shared report-document renderer", () => {
