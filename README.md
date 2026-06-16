@@ -188,7 +188,7 @@ Slash commands require the TUI plugin entry in `tui.json` and open deterministic
 | --- | --- |
 | `opencode-quota show` | Terminal quota-only quick glance |
 | `opencode-quota show --json` | Machine-readable JSON output for external tools |
-| `opencode-quota show --json --threshold <pct>` | Exit `1` if any provider is below `<pct>%` remaining |
+| `opencode-quota show --json --threshold <pct>` | Exit `1` if cached quota is below `<pct>%`; exit `2` if none can be compared |
 | `/quota` | Detailed quota report |
 | `/quota_status` | Config, provider, auth, pricing, `enabled`/`home` announcement config, `source=bundled_only`, `network=false`, and active/future/expired announcement counts |
 | `/quota_announcements` | List active bundled maintainer notices |
@@ -467,21 +467,22 @@ opencode-quota show --json [--threshold <pct>] [--provider <id>]
 
 | Flag | Behavior |
 |---|---|
-| `--json` | Emit JSON to stdout instead of human-readable text. Reads from the disk cache only — no network calls, <10 ms |
-| `--threshold <pct>` | With `--json`, exit `1` if any enabled provider is below `<pct>`% remaining |
+| `--json` | Emit JSON to stdout instead of human-readable text. Reads from the disk cache only — no network calls |
+| `--provider <id>` | Include only one provider key, using the same provider IDs accepted by `show` |
+| `--threshold <pct>` | With `--json`, exit `1` if any comparable cached percentage is below `<pct>`% remaining; exit `2` if there is no cached percentage to compare |
 
-`--json` reads from the per-provider disk cache that the TUI refreshes every 60 s. When the TUI is running, the cache is always warm.
+`--json` reads from the per-provider disk cache populated by normal quota refreshes. If no cached entry exists for a provider, that provider is reported as `unavailable`.
 
 ### Export file (TUI background writer)
 
-When enabled, the TUI writes a unified JSON file after each background refresh (same 60 s interval, data already in memory).
+When enabled, the TUI writes a unified JSON file after each home-bottom background refresh (same 60 s interval). The export writer reads the existing provider cache and does not fetch quota itself.
 
 ```jsonc
 // opencode-quota/quota-toast.json
 {
   "export": {
     "enabled": true,
-    "path": "~/.cache/opencode/quota-export.json"  // default
+    "path": ""  // XDG cache default: $XDG_CACHE_HOME/opencode/quota-export.json
   }
 }
 ```
@@ -499,13 +500,13 @@ Both surfaces emit the same structure:
   "fromCache": true,
   "cacheAgeSeconds": 42,          // age of the oldest provider entry
   "providers": {
-    "github-copilot": {
+    "copilot": {
       "status": "ok",
       "fetchedAt": 1748735958,
       "entries": [
         {
           "name": "Premium Requests",
-          "window": "monthly",
+          "window": "Monthly",
           "percentRemaining": 62.3,
           "resetAt": 1748908800,
           "unlimited": false
@@ -518,7 +519,7 @@ Both surfaces emit the same structure:
       "error": "Request timeout after 5000ms"
     },
     "anthropic": {
-      "status": "unavailable"     // isAvailable() returned false
+      "status": "unavailable"     // no cached quota is available
     }
   }
 }
@@ -528,21 +529,24 @@ Provider `status` values:
 
 | Value | Meaning |
 |---|---|
-| `ok` | Fetch succeeded; `entries` is populated |
-| `error` | Fetch was attempted but failed; `error` has the message |
-| `unavailable` | Provider credentials not detected; not attempted |
+| `ok` | Cached fetch succeeded; `entries` is populated |
+| `error` | Cached fetch was attempted but failed; `error` has the message |
+| `unavailable` | No cached quota is available, such as missing credentials or no prior refresh |
+
+Optional fields: `window` is present only when a provider row reports one, `percentRemaining` is absent for value-only rows, and `resetAt` is absent when the provider does not report a reset time.
 
 ### Integration examples
 
 **CI gate — abort if quota is low:**
 ```bash
 npx @slkiser/opencode-quota show --json --threshold 5
-# exits 1 if any enabled provider is below 5% remaining
+# exits 1 if any comparable cached provider is below 5% remaining
+# exits 2 if there is no cached percentage to compare
 ```
 
 **Shell script — branch on remaining quota:**
 ```bash
-PCT=$(opencode-quota show --json | jq '.providers["github-copilot"].entries[0].percentRemaining')
+PCT=$(opencode-quota show --json | jq '.providers["copilot"].entries[0].percentRemaining')
 (( ${PCT%.*} < 10 )) && echo "Low quota, skipping." && exit 0
 ```
 

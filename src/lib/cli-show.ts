@@ -38,8 +38,8 @@ const SHOW_USAGE = [
   "Options:",
   "  --provider <provider-id>  Show quota for one provider",
   "  --json                    Machine-readable JSON output (reads from cache)",
-  "  --threshold <pct>         With --json, exit 1 if any provider is below <pct>% remaining",
-  "                            (exit 2 if no provider has cached quota to compare)",
+  "  --threshold <pct>         With --json, exit 1 if any cached percentage is below <pct>%",
+  "                            remaining (exit 2 if no cached percentage can be compared)",
   "  --help, -h                Show help",
 ].join("\n");
 
@@ -224,15 +224,21 @@ async function runCliShowJsonOutput(params: {
       return 2;
     }
 
+    let hasComparablePercent = false;
     for (const provider of okProviders) {
       const percents = provider.entries
         .map((e) => e.percentRemaining)
         .filter((p): p is number => p !== undefined);
       if (percents.length === 0) continue;
+      hasComparablePercent = true;
       const minPercent = Math.min(...percents);
       if (minPercent < threshold) {
         return 1;
       }
+    }
+
+    if (!hasComparablePercent) {
+      return 2;
     }
   }
 

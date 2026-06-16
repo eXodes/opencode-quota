@@ -563,6 +563,42 @@ describe("runCliShowCommand", () => {
     expect(jsonCode).toBe(2);
   });
 
+  it("--threshold exits 2 when cached ok providers have no percentRemaining values", async () => {
+    const provider = {
+      id: "synthetic",
+      isAvailable: vi.fn().mockResolvedValue(true),
+      fetch: vi.fn().mockResolvedValue({
+        attempted: true,
+        entries: [{ name: "Synthetic", kind: "value", value: "$42", label: "Usage:" }],
+        errors: [],
+      }),
+    };
+    mockProviders.push(provider);
+    writeFileSync(
+      join(workspaceDir, "opencode.json"),
+      JSON.stringify({
+        experimental: { quotaToast: { enabledProviders: ["synthetic"] } },
+      }),
+      "utf8",
+    );
+
+    await runCliShowCommand({
+      argv: [],
+      cwd: workspaceDir,
+      stdout: { write: () => true } as any,
+      stderr: { write: () => true } as any,
+    });
+
+    const jsonCode = await runCliShowCommand({
+      argv: ["--json", "--threshold", "10"],
+      cwd: workspaceDir,
+      stdout: { write: () => true } as any,
+      stderr: { write: () => true } as any,
+    });
+
+    expect(jsonCode).toBe(2);
+  });
+
   it("--json --provider copilot only includes the copilot key", async () => {
     const copilotProvider = {
       id: "copilot",
