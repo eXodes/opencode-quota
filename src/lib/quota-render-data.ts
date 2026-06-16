@@ -146,21 +146,21 @@ export function matchesQuotaProviderCurrentSelection(params: {
   currentProviderID?: string;
   enabledProviders?: string[] | "auto";
 }): boolean {
-  if (params.currentProviderID) {
-    const normalizedCurrentProviderID = normalizeQuotaProviderId(params.currentProviderID);
-    if (params.provider.id === normalizedCurrentProviderID) {
-      return true;
-    }
-    if (params.provider.id === "cursor" && isCursorProviderId(params.currentProviderID)) {
-      return true;
-    }
+  if (params.currentModel) {
+    return params.provider.matchesCurrentModel
+      ? params.provider.matchesCurrentModel(params.currentModel, {
+          enabledProviders: params.enabledProviders ?? "auto",
+        })
+      : true;
   }
-  if (!params.currentModel) return false;
-  return params.provider.matchesCurrentModel
-    ? params.provider.matchesCurrentModel(params.currentModel, {
-        enabledProviders: params.enabledProviders ?? "auto",
-      })
-    : true;
+
+  if (!params.currentProviderID) return false;
+
+  const normalizedCurrentProviderID = normalizeQuotaProviderId(params.currentProviderID);
+  if (params.provider.id === normalizedCurrentProviderID) {
+    return true;
+  }
+  return params.provider.id === "cursor" && isCursorProviderId(params.currentProviderID);
 }
 
 function hasCurrentQuotaSelection(params: {

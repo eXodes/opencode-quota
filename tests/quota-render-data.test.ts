@@ -382,7 +382,7 @@ describe("collectQuotaRenderData shared quota state", () => {
     ).toBe(true);
   });
 
-  it("uses currentProviderID as a positive match when currentModel is also present", () => {
+  it("uses currentModel matching when currentProviderID is also present", () => {
     const provider = {
       id: "openai",
       matchesCurrentModel: vi.fn().mockReturnValue(false),
@@ -394,8 +394,10 @@ describe("collectQuotaRenderData shared quota state", () => {
         currentProviderID: "openai",
         currentModel: "anthropic/claude-sonnet-4",
       }),
-    ).toBe(true);
-    expect(provider.matchesCurrentModel).not.toHaveBeenCalled();
+    ).toBe(false);
+    expect(provider.matchesCurrentModel).toHaveBeenCalledWith("anthropic/claude-sonnet-4", {
+      enabledProviders: "auto",
+    });
   });
 
   it("passes explicit enabledProviders context into current-model matching", () => {
